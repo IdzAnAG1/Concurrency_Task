@@ -30,5 +30,5 @@ func (t Task_1) Launch() {
 }
 
 func init() {
-	
+
 }
