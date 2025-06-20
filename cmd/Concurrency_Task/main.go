@@ -1,37 +1,46 @@
 package main
 
 import (
+	"concurrency_task/internal/tasks/task_code_storage"
 	_ "concurrency_task/internal/tasks/task_impl"
-	"concurrency_task/internal/tasks/task_storage"
-	"concurrency_task/internal/utils/capabilityChecker"
+	"concurrency_task/internal/utils/general"
 	"fmt"
-	"time"
 )
 
 func main() {
-	var (
-		BooleanChannel = make(chan bool)
-	)
+	TSC := task_code_storage.NewTCStorage()
 
-	Tasks := task_storage.GetStorageInstance()
+	TSC.Initialization(general.GetFilesInDirectory("internal/tasks/task_impl"), "internal/tasks/task_impl")
 
-	go func(store task_storage.TaskStorage, booleanChannel chan bool) {
-		CapChecker := capabilityChecker.NewCapChecker("internal/tasks/task_impl", 500*time.Millisecond)
-		fmt.Println("Cap Checker Started")
-		CapChecker.LaunchChecker(booleanChannel)
-	}(*Tasks, BooleanChannel)
-
-	for {
-		select {
-		case val := <-BooleanChannel:
-			{
-				if val {
-					fmt.Println("New task")
-					time.Sleep(5 * time.Second)
-				}
-			}
-		default:
-			fmt.Println("Ничего нового")
-		}
+	for k, v := range TSC.Storage {
+		fmt.Println(k, "\n", v)
+		fmt.Println("--- --- ---")
 	}
+	// --- --- --- --- --- --- --- --- --- ---
+
+	//var (
+	//	BooleanChannel = make(chan bool)
+	//)
+	//
+	//Tasks := task_storage.GetStorageInstance()
+	//
+	//go func(store task_storage.TaskStorage, booleanChannel chan bool) {
+	//	CapChecker := capabilityChecker.NewCapChecker("internal/tasks/task_impl", 500*time.Millisecond)
+	//	fmt.Println("Cap Checker Started")
+	//	CapChecker.LaunchChecker(booleanChannel)
+	//}(*Tasks, BooleanChannel)
+	//
+	//for {
+	//	select {
+	//	case val := <-BooleanChannel:
+	//		{
+	//			if val {
+	//				fmt.Println("New task")
+	//				time.Sleep(5 * time.Second)
+	//			}
+	//		}
+	//	default:
+	//		fmt.Println("Ничего нового")
+	//	}
+	//}
 }

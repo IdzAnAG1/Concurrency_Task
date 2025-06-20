@@ -1,8 +1,8 @@
 package capabilityChecker
 
 import (
+	"concurrency_task/internal/utils/general"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 	"time"
@@ -20,11 +20,12 @@ func NewCapChecker(pathToMethodsDirectory string, interval time.Duration) *CapCh
 		mu:                     sync.Mutex{},
 		PathToMethodsDirectory: pathToMethodsDirectory,
 		Interval:               interval,
-		quanFilesInDirectory:   getQuanFilesInDirectory(pathToMethodsDirectory),
+		quanFilesInDirectory:   len(general.GetFilesInDirectory(pathToMethodsDirectory)),
 	}
 }
 
 func (cc *CapChecker) LaunchChecker(channel chan bool) {
+
 	ticker := time.NewTicker(cc.Interval)
 	defer ticker.Stop()
 	for {
@@ -34,23 +35,15 @@ func (cc *CapChecker) LaunchChecker(channel chan bool) {
 				fmt.Println("Add new file in the directory")
 				channel <- true
 			}
-			if val, ok := cc.isFileWasUpdated(); ok == true {
+			if val, ok := cc.isFileWasUpdated(general.GetFilesInDirectory(cc.PathToMethodsDirectory)); ok == true {
 				fmt.Println(fmt.Sprintf("%s was updated", val))
 			}
 		}
 	}
 }
 
-func getQuanFilesInDirectory(path string) int {
-	FilesIntoDirectory, err := os.ReadDir(path + "/")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return len(FilesIntoDirectory)
-}
-
 func (cc *CapChecker) isDirectoryWasUpdated() bool {
-	filesNow := getQuanFilesInDirectory(cc.PathToMethodsDirectory)
+	filesNow := len(general.GetFilesInDirectory(cc.PathToMethodsDirectory))
 	if filesNow != cc.quanFilesInDirectory {
 		cc.quanFilesInDirectory = filesNow
 		return true
@@ -58,6 +51,13 @@ func (cc *CapChecker) isDirectoryWasUpdated() bool {
 	return false
 }
 
-func (cc *CapChecker) isFileWasUpdated() (string, bool) {
+func (cc *CapChecker) isFileWasUpdated(files []os.DirEntry) (string, bool) {
+	wg := sync.WaitGroup{}
+	for _, file := range files {
+		wg.Add(1)
+		go func(f os.DirEntry) {
+
+		}(file)
+	}
 	return "", false
 }
