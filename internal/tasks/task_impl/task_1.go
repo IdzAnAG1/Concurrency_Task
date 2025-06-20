@@ -1,34 +1,19 @@
 package task_impl
 
 import (
+	"concurrency_task/internal/tasks/task_storage"
 	"fmt"
-	"sync"
 )
 
-type Task_1 struct {
-	Number int
+type Task1 struct {
+	Name string
 }
 
-func NewTask_1() Task_1 {
-	return Task_1{
-		Number: 1,
-	}
-}
-func (t Task_1) Launch() {
-	counter := 20
-	wg := sync.WaitGroup{}
-	for i := 0; i <= counter; i++ {
-		//i := i Shadowing
-		wg.Add(1)
-		go func(in int) {
-			defer wg.Done()
-			fmt.Println(in * in)
-		}(i)
-	}
-
-	wg.Wait()
+func (t Task1) Launch() {
+	fmt.Println("Launching task")
 }
 
 func init() {
-
+	Storage := task_storage.GetStorageInstance()
+	Storage.AddInStorage("task_1", &Task1{})
 }

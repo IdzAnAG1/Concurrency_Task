@@ -1,17 +1,29 @@
 package task_storage
 
-import "concurrency_task/internal/tasks"
+import (
+	"concurrency_task/internal/tasks"
+)
+
+var (
+	StorageInstance *TaskStorage
+)
 
 type TaskStorage struct {
-	Storage map[int]tasks.ConcurrencyTask
+	Storage map[string]tasks.ConcurrencyTask
 }
 
 func NewTaskStorage() *TaskStorage {
 	return &TaskStorage{
-		make(map[int]tasks.ConcurrencyTask),
+		Storage: make(map[string]tasks.ConcurrencyTask),
 	}
 }
 
-func (ts *TaskStorage) AddInStorage(number int, task tasks.ConcurrencyTask) {
-	ts.Storage[number] = task
+func GetStorageInstance() *TaskStorage {
+	if StorageInstance == nil {
+		StorageInstance = NewTaskStorage()
+	}
+	return StorageInstance
+}
+func (ts *TaskStorage) AddInStorage(name string, task tasks.ConcurrencyTask) {
+	ts.Storage[name] = task
 }

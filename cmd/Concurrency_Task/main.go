@@ -1,51 +1,37 @@
 package main
 
 import (
+	_ "concurrency_task/internal/tasks/task_impl"
+	"concurrency_task/internal/tasks/task_storage"
 	"concurrency_task/internal/utils/capabilityChecker"
-	"concurrency_task/internal/utils/general"
 	"fmt"
-	"log"
-	"os"
 	"time"
 )
 
 func main() {
-	Map := initDir("internal/tasks/task_impl")
-	channel := make(chan bool)
-	CC := capabilityChecker.CapChecker{
-		PathToMethodsDirectory: "internal/tasks/task_impl",
-		Interval:               3 * time.Second,
-		FunctionsMap:           Map,
-	}
-	go CC.LaunchChecker(channel)
+	var (
+		BooleanChannel = make(chan bool)
+	)
+
+	Tasks := task_storage.GetStorageInstance()
+
+	go func(store task_storage.TaskStorage, booleanChannel chan bool) {
+		CapChecker := capabilityChecker.NewCapChecker("internal/tasks/task_impl", 500*time.Millisecond)
+		fmt.Println("Cap Checker Started")
+		CapChecker.LaunchChecker(booleanChannel)
+	}(*Tasks, BooleanChannel)
 
 	for {
 		select {
-		case val := <-channel:
+		case val := <-BooleanChannel:
 			{
 				if val {
 					fmt.Println("New task")
-					return
+					time.Sleep(5 * time.Second)
 				}
 			}
 		default:
 			fmt.Println("Ничего нового")
 		}
 	}
-}
-
-func initDir(path string) (firstMap map[string]string) {
-	firstMap = make(map[string]string)
-	dirElements, err := os.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, dirEl := range dirElements {
-		content, err := general.GetFileContents(path+"/", dirEl.Name())
-		if err != nil {
-			log.Fatal(err)
-		}
-		firstMap[dirEl.Name()] = general.ConvertToHash(content)
-	}
-	return
 }
