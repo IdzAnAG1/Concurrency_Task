@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 func ConvertToHash(content string) string {
@@ -15,7 +16,7 @@ func ConvertToHash(content string) string {
 }
 
 func GetFileContents(pathToDir string, fileName string) (string, error) {
-	file, err := os.OpenFile(pathToDir+"/"+fileName, os.O_RDONLY, os.ModePerm)
+	file, err := os.OpenFile(filepath.Join(pathToDir, fileName), os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
