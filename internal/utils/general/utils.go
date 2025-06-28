@@ -13,7 +13,6 @@ func ConvertToHash(content string) string {
 	hasher.Write([]byte(content))
 	return hex.EncodeToString(hasher.Sum(nil))
 }
-
 func ReadFromFile(dir string, file os.DirEntry) string {
 	data, err := os.ReadFile(path.Join(dir, file.Name()))
 	if err != nil {

@@ -34,7 +34,7 @@ func (ts *TCStorage) Delete(filename string) {
 	delete(ts.Storage, filename)
 }
 
-func (ts *TCStorage) Initialization(Files []os.DirEntry, pathToDir string) {
+func (ts *TCStorage) Update(Files []os.DirEntry, pathToDir string) {
 	for _, file := range Files {
 		if _, exists := ts.Storage[file.Name()]; !exists {
 			ts.Storage[file.Name()] = general.ConvertToHash(general.ReadFromFile(pathToDir, file))

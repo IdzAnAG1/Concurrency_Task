@@ -37,6 +37,8 @@ func (ch *ChaD) LaunchChad(channel chan bool) {
 	defer ticker.Stop()
 
 	for {
+		files := general.GetFilesInDirectory(ch.PathToMethodsDirectory)
+		ch.tcStorage.Update(files, ch.PathToMethodsDirectory)
 		select {
 		case <-ticker.C:
 
@@ -53,11 +55,11 @@ func (ch *ChaD) isDirectoryWasUpdated(filesNow int) bool {
 	return false
 }
 
-func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry, tcs *task_code_storage.TCStorage) (string, bool) {
+func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, bool) {
 	for _, file := range filesInDir {
 		currentCode := general.ConvertToHash(general.ReadFromFile(ch.PathToMethodsDirectory, file))
-		if currentCode != tcs.Storage[file.Name()] {
-			tcs.Storage[file.Name()] = currentCode
+		if currentCode != ch.tcStorage.Storage[file.Name()] {
+			ch.tcStorage.Storage[file.Name()] = currentCode
 			return fmt.Sprintf("%s - %s", time.Now().Format("02-01-2006 15:04:05"), file.Name()), true
 		}
 	}
