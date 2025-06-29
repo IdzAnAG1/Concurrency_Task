@@ -2,7 +2,6 @@ package task_code_storage
 
 import (
 	"concurrency_task/internal/utils/general"
-	"os"
 	"sync"
 )
 
@@ -34,7 +33,10 @@ func (ts *TCStorage) Delete(filename string) {
 	delete(ts.Storage, filename)
 }
 
-func (ts *TCStorage) Update(Files []os.DirEntry, pathToDir string) {
+func (ts *TCStorage) Initialize(pathToDir string) {
+	Files := general.GetFilesInDirectory(pathToDir)
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
 	for _, file := range Files {
 		if _, exists := ts.Storage[file.Name()]; !exists {
 			ts.Storage[file.Name()] = general.ConvertToHash(general.ReadFromFile(pathToDir, file))

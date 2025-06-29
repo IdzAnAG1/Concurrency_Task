@@ -3,7 +3,7 @@ package chad
 import (
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/general"
-	"fmt"
+
 	"os"
 	"sync"
 	"time"
@@ -25,23 +25,28 @@ func NewChad(pathToMethodsDirectory string, interval time.Duration, filesNumber 
 		mu:                     sync.Mutex{},
 		PathToMethodsDirectory: pathToMethodsDirectory,
 		Interval:               interval,
-		quanFilesInDirectory:   filesNumber, // --
+		quanFilesInDirectory:   filesNumber,
 		tcStorage:              task_code_storage.NewTCStorage(),
 	}
 }
 
 // _________________________________________________________________________
 
-func (ch *ChaD) LaunchChad(channel chan bool) {
+func (ch *ChaD) Launch(channel chan bool) {
+	ch.tcStorage.Initialize(ch.PathToMethodsDirectory)
 	ticker := time.NewTicker(ch.Interval)
 	defer ticker.Stop()
 
 	for {
 		files := general.GetFilesInDirectory(ch.PathToMethodsDirectory)
-		ch.tcStorage.Update(files, ch.PathToMethodsDirectory)
 		select {
 		case <-ticker.C:
-
+			if ch.isDirectoryWasUpdated(len(files)) {
+				channel <- true
+			}
+			if _, ok := ch.isFileWasUpdated(files); ok {
+				channel <- true
+			}
 		}
 	}
 }
@@ -57,16 +62,35 @@ func (ch *ChaD) isDirectoryWasUpdated(filesNow int) bool {
 
 func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, bool) {
 	for _, file := range filesInDir {
-		currentCode := general.ConvertToHash(general.ReadFromFile(ch.PathToMethodsDirectory, file))
+		currentCode := general.ReadFromFile(ch.PathToMethodsDirectory, file)
+		hashCode := general.ConvertToHash(currentCode)
 		if currentCode != ch.tcStorage.Storage[file.Name()] {
-			ch.tcStorage.Storage[file.Name()] = currentCode
-			return fmt.Sprintf("%s - %s", time.Now().Format("02-01-2006 15:04:05"), file.Name()), true
+			ch.tcStorage.Storage[file.Name()] = hashCode
+			return file.Name(), true
 		}
 	}
 	return "", false
 }
 
-func isFileWasUpdated_v2() {
-	// конкурентно решить проблему
-
+/*
+func (ch *ChaD) isFileWasUpdated_v2_MayBe(filesInDir []os.DirEntry) string {
+	updatedFiles := make(chan string)
+	wg := sync.WaitGroup{}
+	for _, file := range filesInDir {
+		wg.Add(1)
+		go func(f os.DirEntry, chann chan string) {
+			defer wg.Done()
+			ch.mu.Lock()
+			currentCode := general.ReadFromFile(ch.PathToMethodsDirectory, f)
+			hashCode := general.ConvertToHash(currentCode)
+			if hashCode != ch.tcStorage.Storage[f.Name()] {
+				ch.tcStorage.Storage[f.Name()] = hashCode
+				updatedFiles <- f.Name()
+			}
+			ch.mu.Unlock()
+		}(file, updatedFiles)
+	}
+	wg.Wait()
+	return <-updatedFiles
 }
+*/
