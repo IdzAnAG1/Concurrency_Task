@@ -1,50 +1,53 @@
 package fired
 
 import (
+	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/variables"
-	"fmt"
 	"regexp"
 	"strings"
 )
 
 // Fired - Files Readiness Detector
 type Fired struct {
+	tcStorage *task_code_storage.TCStorage
 }
 
 func NewFired() *Fired {
 	return &Fired{}
 }
 
-func (f *Fired) Run() {
+func (f *Fired) Launch(channel chan string) {
 	go func() {
+		for {
+			select {
+			case val := <-channel:
+				{
+					if fileIsReadyImp(val) {
 
+					}
+				}
+			}
+		}
 	}()
 }
 
-func (f *Fired) FileIsReadyImp(contentsChannel chan string) bool {
-	str := strings.Split(<-contentsChannel, " ")
-	fmt.Println(str)
+func fileIsReadyImp(content string) bool {
+	lines := strings.Split(content, "\n")
+	if ok := fileHasContain(variables.REG_EXP_USERSTUCT, lines); !ok {
+		return false
+	}
+	if ok := fileHasContain(variables.REG_EXP_FUNCINIT, lines); !ok {
+		return false
+	}
 	return true
 }
 
-func fileHasUserStruct(content []string) bool {
-	for _, el := range content {
-		if elementIsValid(variables.REG_EXP_USERSTUCT, el) {
-			return true
-		}
-	}
-	return false
-}
-
-func fileHasFunctionForImplement(content []string) bool {
-	for _, el := range content {
-		if elementIsValid(variables.REG_EXP_FUNCINIT, el) {
-			return true
-		}
-	}
-	return false
-}
-func elementIsValid(regularExpression, line string) bool {
+func fileHasContain(regularExpression string, content []string) bool {
 	r := regexp.MustCompile(regularExpression)
-	return r.MatchString(line)
+	for _, el := range content {
+		if r.MatchString(el) {
+			return true
+		}
+	}
+	return false
 }

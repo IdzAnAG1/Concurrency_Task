@@ -35,11 +35,12 @@ func (ts *TCStorage) Delete(filename string) {
 
 func (ts *TCStorage) Initialize(pathToDir string) {
 	Files := general.GetFilesInDirectory(pathToDir)
-	ts.mu.Lock()
-	defer ts.mu.Unlock()
 	for _, file := range Files {
+		fileContent := general.ReadFromFile(pathToDir, file)
+		ts.mu.Lock()
 		if _, exists := ts.Storage[file.Name()]; !exists {
-			ts.Storage[file.Name()] = general.ConvertToHash(general.ReadFromFile(pathToDir, file))
+			ts.Storage[file.Name()] = fileContent
 		}
+		ts.mu.Unlock()
 	}
 }
