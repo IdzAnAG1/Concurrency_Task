@@ -10,7 +10,7 @@ type Task1 struct {
 }
 
 func (t Task1) Launch() {
-	fmt.Println("Launching task")
+	fmt.Println("Launching test")
 }
 
 func init() {

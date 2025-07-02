@@ -1,7 +1,7 @@
 package task_code_storage
 
 import (
-	"concurrency_task/internal/utils/general"
+	"concurrency_task/internal/utils/file_handler"
 	"sync"
 )
 
@@ -34,9 +34,9 @@ func (ts *TCStorage) Delete(filename string) {
 }
 
 func (ts *TCStorage) Initialize(pathToDir string) {
-	Files := general.GetFilesInDirectory(pathToDir)
+	Files := file_handler.GetFilesInDirectory(pathToDir)
 	for _, file := range Files {
-		fileContent := general.ReadFromFile(pathToDir, file)
+		fileContent := file_handler.ReadFromFile(pathToDir, file)
 		ts.mu.Lock()
 		if _, exists := ts.Storage[file.Name()]; !exists {
 			ts.Storage[file.Name()] = fileContent

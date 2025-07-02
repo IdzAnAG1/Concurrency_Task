@@ -1,49 +1,41 @@
 package main
 
 import (
+	"concurrency_task/internal/file_verifier/change_detector"
+	"concurrency_task/internal/file_verifier/file_readiness_detector"
 	"concurrency_task/internal/models"
+	"concurrency_task/internal/tasks/task_code_storage"
 	_ "concurrency_task/internal/tasks/task_impl"
-	"concurrency_task/internal/utils/chad"
-	"concurrency_task/internal/utils/fired"
+	"concurrency_task/internal/utils/file_handler"
+	"fmt"
+	"time"
 )
 
 func main() {
-	// Запуск механизмов и окружения(в виде структуры каналов) для них
 	channels := models.NewChannel()
-	Fired := fired.NewFired()
-	Chad := chad.NewChad()
+	files := file_handler.GetFilesInDirectory("internal/tasks/task_impl")
+	store := task_code_storage.NewTCStorage()
+	Fired := file_readiness_detector.NewFired(store)
 
-	Fired.Launch()
-	Chad.Launch()
-	//contentChannel := make(chan string)
-	//f := fired.NewFired()
-	//
-	//f.Run(contentChannel)
-	//files := general.GetFilesInDirectory("internal/tasks/task_impl")
-	//str := general.ReadFromFile("internal/tasks/task_impl", files[0])
-	//contentChannel <- str
-	//
-	//var (
-	//	BooleanChannel = make(chan bool)
-	//)
-	//
-	//Tasks := task_storage.GetStorageInstance()
-	//
-	//go func(store task_storage.TaskStorage, booleanChannel chan bool) {
-	//	Chad := chad.NewChad("internal/tasks/task_impl", 500*time.Millisecond, len(general.GetFilesInDirectory("internal/tasks/task_impl")))
-	//	fmt.Println("Cap Checker Started")
-	//	Chad.Launch(booleanChannel)
-	//}(*Tasks, BooleanChannel)
-	//for {
-	//	select {
-	//	case val := <-BooleanChannel:
-	//		{
-	//			if val {
-	//				fmt.Println("channel is catch the signal")
-	//			}
-	//		}
-	//	default:
-	//
-	//	}
-	//}
+	Chad := change_detector.NewChad(
+		"internal/tasks/task_impl",
+		time.Millisecond*250,
+		len(files), store)
+
+	Fired.Launch(channels.Content)
+	Chad.Launch(channels.Boolean, channels.Content)
+
+	for {
+		select {
+		case val := <-channels.Boolean:
+			{
+				if val {
+					fmt.Println("channel is catch the signal")
+				}
+			}
+		default:
+
+		}
+	}
+
 }

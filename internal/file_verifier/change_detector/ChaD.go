@@ -1,8 +1,9 @@
-package chad
+package change_detector
 
 import (
 	"concurrency_task/internal/tasks/task_code_storage"
-	"concurrency_task/internal/utils/general"
+	"concurrency_task/internal/utils/file_handler"
+	"concurrency_task/internal/utils/hash"
 
 	"os"
 	"time"
@@ -26,23 +27,25 @@ func NewChad(pathToMethodsDirectory string, interval time.Duration, filesNumber 
 }
 
 func (ch *ChaD) Launch(channel chan bool, channelToFired chan string) {
-	ch.tcStorage.Initialize(ch.PathToMethodsDirectory)
-	ticker := time.NewTicker(ch.Interval)
-	defer ticker.Stop()
+	go func() {
+		ch.tcStorage.Initialize(ch.PathToMethodsDirectory)
+		ticker := time.NewTicker(ch.Interval)
+		defer ticker.Stop()
 
-	for {
-		files := general.GetFilesInDirectory(ch.PathToMethodsDirectory)
-		select {
-		case <-ticker.C:
-			if ch.isDirectoryWasUpdated(len(files)) {
-				channel <- true
-			}
-			if val, ok := ch.isFileWasUpdated(files); ok {
-				channelToFired <- val
-				channel <- true
+		for {
+			files := file_handler.GetFilesInDirectory(ch.PathToMethodsDirectory)
+			select {
+			case <-ticker.C:
+				if ch.isDirectoryWasUpdated(len(files)) {
+					channel <- true
+				}
+				if val, ok := ch.isFileWasUpdated(files); ok {
+					channelToFired <- val
+					channel <- true
+				}
 			}
 		}
-	}
+	}()
 }
 
 func (ch *ChaD) isDirectoryWasUpdated(filesNow int) bool {
@@ -55,7 +58,7 @@ func (ch *ChaD) isDirectoryWasUpdated(filesNow int) bool {
 
 func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, bool) {
 	for _, file := range filesInDir {
-		currentCode := general.ReadFromFile(ch.PathToMethodsDirectory, file)
+		currentCode := file_handler.ReadFromFile(ch.PathToMethodsDirectory, file)
 		if ch.isCurrentContentNotActual(currentCode, file.Name()) {
 			return file.Name(), true
 		}
@@ -64,8 +67,8 @@ func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, bool) {
 }
 
 func (ch *ChaD) isCurrentContentNotActual(currentContent, filename string) bool {
-	savedEntry := general.ConvertToHash(ch.tcStorage.Get(filename))
-	if general.ConvertToHash(currentContent) != savedEntry {
+	savedEntry := hash.ConvertToHash(ch.tcStorage.Get(filename))
+	if hash.ConvertToHash(currentContent) != savedEntry {
 		ch.tcStorage.Put(filename, currentContent)
 		return true
 	}

@@ -11,3 +11,9 @@ func NewChannel() *Channel {
 		Boolean: make(chan bool),
 	}
 }
+
+type ReadinessIndicator struct {
+	UserStructIsExist              bool
+	InterfaceImplementationIsExist bool
+	InitFuncIsExist                bool
+}
