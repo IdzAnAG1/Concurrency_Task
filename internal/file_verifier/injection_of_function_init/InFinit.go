@@ -1,0 +1,1 @@
+package injection_of_function_init
