@@ -7,7 +7,7 @@ const (
 )
 
 var (
-	RagExpressions = map[string]string{
+	RegExpressions = map[string]string{
 		USER_STRUCT:      `(?)type .*\b struct\b`,
 		FUNC_INIT:        `func init\(\) \{`,
 		IMPLEMENTED_FUNC: `func\s*\(\w+\s+\*?\w+\)\s+Launch\s*\(\s*\)\s*\{`,

@@ -18,35 +18,36 @@ func NewFired(store *task_code_storage.TCStorage) *Fired {
 	return &Fired{store}
 }
 
-func (f *Fired) Launch(channel chan string) {
+func (f *Fired) Launch(channels models.Channel) {
 	go func() {
 		for {
 			select {
-			case val := <-channel:
+			case val := <-channels.Content:
 				{
-					indicator := f.fileIsReadyImp(val)
-					fmt.Println(indicator)
+					fmt.Println("Cathch in fired")
+					test := f.fileIsReadyImp_v2(val)
+					channels.ContentIndicator <- test
 				}
 			}
 		}
 	}()
 }
 
-func (f *Fired) fileIsReadyImp(content string) (indicator models.ReadinessIndicator) {
+func (f *Fired) fileIsReadyImp_v2(content string) *models.InfinitData_v2 {
 	code := f.tcStorage.Get(content)
 	lines := strings.Split(code, "\n")
-	for key, value := range variables.RagExpressions {
-		flag := regex.Contains(value, lines)
-		switch key {
-		case variables.USER_STRUCT:
-			indicator.UserStructIsExist = flag
 
-		case variables.IMPLEMENTED_FUNC:
-			indicator.InterfaceImplementationIsExist = flag
+	infData := &models.InfinitData_v2{
+		FileName:  content,
+		Indicator: *models.NewReadinessIndicator(),
+	}
 
-		case variables.FUNC_INIT:
-			indicator.InitFuncIsExist = flag
+	for key, val := range variables.RegExpressions {
+		index, flag := regex.Contains(val, lines)
+		if flag {
+			infData.Indicator.Put(key, index)
 		}
 	}
-	return
+
+	return infData
 }
