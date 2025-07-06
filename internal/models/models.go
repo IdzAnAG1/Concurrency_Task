@@ -6,6 +6,7 @@ type Channel struct {
 	Content          chan string
 	ContentChange    chan bool
 	ContentIndicator chan *InfinitData_v2
+	Errors           chan error
 }
 
 func NewChannel() *Channel {

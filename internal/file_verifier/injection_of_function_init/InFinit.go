@@ -1,6 +1,7 @@
 package injection_of_function_init
 
 import (
+	"concurrency_task/internal/config"
 	"concurrency_task/internal/models"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/variables"
@@ -15,9 +16,10 @@ type Infinit struct {
 	CodeStorage *task_code_storage.TCStorage
 }
 
-func NewInfinit(path string, storage *task_code_storage.TCStorage) *Infinit {
+func NewInfinit(cfg *config.Config) *Infinit {
 	return &Infinit{
-		path, storage,
+		PathToDir:   cfg.PathToMethodsDirectory,
+		CodeStorage: cfg.TCStorage,
 	}
 }
 func (i *Infinit) Launch(channels models.Channel) {

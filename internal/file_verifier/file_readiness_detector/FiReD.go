@@ -1,6 +1,7 @@
 package file_readiness_detector
 
 import (
+	"concurrency_task/internal/config"
 	"concurrency_task/internal/models"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/regex"
@@ -14,8 +15,8 @@ type Fired struct {
 	tcStorage *task_code_storage.TCStorage
 }
 
-func NewFired(store *task_code_storage.TCStorage) *Fired {
-	return &Fired{store}
+func NewFired(cfg *config.Config) *Fired {
+	return &Fired{cfg.TCStorage}
 }
 
 func (f *Fired) Launch(channels models.Channel) {

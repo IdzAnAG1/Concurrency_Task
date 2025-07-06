@@ -1,6 +1,8 @@
 package change_detector
 
 import (
+	"concurrency_task/internal/config"
+	"concurrency_task/internal/models"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/file_handler"
 	"concurrency_task/internal/utils/hash"
@@ -13,22 +15,21 @@ import (
 type ChaD struct {
 	PathToMethodsDirectory string
 	Interval               time.Duration
-	quanFilesInDirectory   int
-	tcStorage              *task_code_storage.TCStorage
+	QuanFilesInDirectory   int
+	TCStorage              *task_code_storage.TCStorage
 }
 
-func NewChad(pathToMethodsDirectory string, interval time.Duration, filesNumber int, storage *task_code_storage.TCStorage) *ChaD {
+func NewChad(cfg *config.Config) *ChaD {
 	return &ChaD{
-		PathToMethodsDirectory: pathToMethodsDirectory,
-		Interval:               interval,
-		quanFilesInDirectory:   filesNumber,
-		tcStorage:              storage,
+		PathToMethodsDirectory: cfg.PathToMethodsDirectory,
+		Interval:               cfg.Interval,
+		QuanFilesInDirectory:   cfg.QuanFilesInDirectory,
+		TCStorage:              cfg.TCStorage,
 	}
 }
 
-func (ch *ChaD) Launch(channel chan bool, channelToFired chan string) {
+func (ch *ChaD) Launch(channel models.Channel) {
 	go func() {
-		ch.tcStorage.Initialize(ch.PathToMethodsDirectory)
 		ticker := time.NewTicker(ch.Interval)
 		defer ticker.Stop()
 
@@ -37,39 +38,43 @@ func (ch *ChaD) Launch(channel chan bool, channelToFired chan string) {
 			select {
 			case <-ticker.C:
 				if ch.isDirectoryWasUpdated(len(files)) {
-					channel <- true
+					channel.ContentChange <- true
 				}
-				if val, ok := ch.isFileWasUpdated(files); ok {
-					channelToFired <- val
-					channel <- true
+				nameFile, err := ch.isFileWasUpdated(files)
+				if err != nil {
+					channel.Errors <- err
 				}
+				channel.Content <- nameFile
 			}
 		}
 	}()
 }
 
 func (ch *ChaD) isDirectoryWasUpdated(filesNow int) bool {
-	if filesNow != ch.quanFilesInDirectory {
-		ch.quanFilesInDirectory = filesNow
+	if filesNow != ch.QuanFilesInDirectory {
+		ch.QuanFilesInDirectory = filesNow
 		return true
 	}
 	return false
 }
 
-func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, bool) {
+func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, error) {
 	for _, file := range filesInDir {
-		currentCode := file_handler.ReadFromFile(ch.PathToMethodsDirectory, file)
+		currentCode, err := file_handler.ReadFromFile(ch.PathToMethodsDirectory, file)
+		if err != nil {
+			return "", err
+		}
 		if ch.isCurrentContentNotActual(currentCode, file.Name()) {
-			return file.Name(), true
+			return file.Name(), nil
 		}
 	}
-	return "", false
+	return "", nil
 }
 
 func (ch *ChaD) isCurrentContentNotActual(currentContent, filename string) bool {
-	savedEntry := hash.ConvertToHash(ch.tcStorage.Get(filename))
+	savedEntry := hash.ConvertToHash(ch.TCStorage.Get(filename))
 	if hash.ConvertToHash(currentContent) != savedEntry {
-		ch.tcStorage.Put(filename, currentContent)
+		ch.TCStorage.Put(filename, currentContent)
 		return true
 	}
 	return false

@@ -33,14 +33,18 @@ func (ts *TCStorage) Delete(filename string) {
 	delete(ts.Storage, filename)
 }
 
-func (ts *TCStorage) Initialize(pathToDir string) {
+func (ts *TCStorage) Initialize(pathToDir string) error {
 	Files := file_handler.GetFilesInDirectory(pathToDir)
 	for _, file := range Files {
-		fileContent := file_handler.ReadFromFile(pathToDir, file)
+		fileContent, err := file_handler.ReadFromFile(pathToDir, file)
+		if err != nil {
+			return err
+		}
 		ts.mu.Lock()
 		if _, exists := ts.Storage[file.Name()]; !exists {
 			ts.Storage[file.Name()] = fileContent
 		}
 		ts.mu.Unlock()
 	}
+	return nil
 }
