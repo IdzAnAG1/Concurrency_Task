@@ -11,6 +11,5 @@ func main() {
 		"internal/tasks/task_impl",
 		250*time.Millisecond,
 	)
-
 	v.Run()
 }

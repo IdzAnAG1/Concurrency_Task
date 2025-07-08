@@ -58,24 +58,44 @@
 ```text
 .
 ├── cmd
-│    └── Concurrency_Task
-│        └── main.go
+│     └── Concurrency_Task
+│         └── main.go
 ├── go.mod
+├── go.sum
 ├── internal
-│    ├── tasks
-│    │   ├── interface.go
-│    │   ├── task_code_storage
-│    │   │   └── TaskCode.go
-│    │   ├── task_impl
-│    │   │   └── task_1.go
-│    │   └── task_storage
-│    │       └── taskStorage.go
-│    └── utils
-│        ├── capabilityChecker
-│        │   └── Checker.go
-│        └── general
-│            └── utils.go
+│        ├── config
+│        │       └── config.go
+│        ├── file_verifier
+│        │       ├── change_detector
+│        │       │       └── ChaD.go
+│        │       ├── file_readiness_detector
+│        │       │   └── FiReD.go
+│        │       ├── injection_of_function_init
+│        │       │       └── InFinit.go
+│        │       └── Verifier.go
+│        ├── models
+│        │       └── models.go
+│        ├── tasks
+│        │       ├── interface.go
+│        │       ├── task_code_storage
+│        │       │       └── TaskCode.go
+│        │       ├── task_impl
+│        │       │       └── task_1.go
+│        │       └── task_storage
+│        │           └── taskStorage.go
+│        ├── utils
+│        │       ├── file_handler
+│        │       │       └── file_handler.go
+│        │       ├── go_uuid
+│        │       │       └── uuid.go
+│        │       ├── hash
+│        │       │       └── hash.go
+│        │       └── regex
+│        │           └── regexp.go
+│        └── variables
+│            └── variables.go
 ├── Makefile
 └── README.md
+
 
 ```

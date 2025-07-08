@@ -26,7 +26,7 @@ func (f *Fired) Launch(channels models.Channel) {
 			case val := <-channels.Content:
 				{
 					fmt.Println("Cathch in fired")
-					test := f.fileIsReadyImp_v2(val)
+					test := f.fileIsReadyImp(val)
 					channels.ContentIndicator <- test
 				}
 			}
@@ -34,20 +34,17 @@ func (f *Fired) Launch(channels models.Channel) {
 	}()
 }
 
-func (f *Fired) fileIsReadyImp_v2(content string) *models.InfinitData_v2 {
+func (f *Fired) fileIsReadyImp(content string) *models.InfinitData {
 	code := f.tcStorage.Get(content)
 	lines := strings.Split(code, "\n")
-
-	infData := &models.InfinitData_v2{
+	infData := &models.InfinitData{
 		FileName:  content,
 		Indicator: *models.NewReadinessIndicator(),
 	}
-
 	for key, val := range variables.RegExpressions {
 		index, flag := regex.Contains(val, lines)
-		if flag {
-			infData.Indicator.Put(key, index)
-		}
+		fmt.Println("!~|~!", flag, index, "!~|~!")
+		infData.Indicator.Put(key, index)
 	}
 
 	return infData

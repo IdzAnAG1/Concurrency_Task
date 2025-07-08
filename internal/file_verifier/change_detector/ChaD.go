@@ -44,7 +44,9 @@ func (ch *ChaD) Launch(channel models.Channel) {
 				if err != nil {
 					channel.Errors <- err
 				}
-				channel.Content <- nameFile
+				if nameFile != "" {
+					channel.Content <- nameFile
+				}
 			}
 		}
 	}()

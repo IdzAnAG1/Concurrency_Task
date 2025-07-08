@@ -62,7 +62,7 @@ func (v *Verifier) Run() {
 				}
 			}
 		default:
-			fmt.Println("Unknown signal")
+
 		}
 	}
 }
