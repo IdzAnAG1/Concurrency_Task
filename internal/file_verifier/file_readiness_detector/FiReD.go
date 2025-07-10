@@ -1,7 +1,7 @@
 package file_readiness_detector
 
 import (
-	"concurrency_task/internal/config"
+	"concurrency_task/internal/channels"
 	"concurrency_task/internal/models"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/regex"
@@ -15,19 +15,19 @@ type Fired struct {
 	tcStorage *task_code_storage.TCStorage
 }
 
-func NewFired(cfg *config.Config) *Fired {
-	return &Fired{cfg.TCStorage}
+func NewFired(store *task_code_storage.TCStorage) *Fired {
+	return &Fired{store}
 }
 
-func (f *Fired) Launch(channels models.Channel) {
+func (f *Fired) Launch(channels channels.Channel) {
 	go func() {
 		for {
 			select {
-			case val := <-channels.Content:
+			case val := <-channels.ReadContentFromChannel():
 				{
 					fmt.Println("Cathch in fired")
 					test := f.fileIsReadyImp(val)
-					channels.ContentIndicator <- test
+					channels.SendToChannelContentIndicator(test)
 				}
 			}
 		}

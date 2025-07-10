@@ -1,7 +1,7 @@
 package injection_of_function_init
 
 import (
-	"concurrency_task/internal/config"
+	"concurrency_task/internal/channels"
 	"concurrency_task/internal/models"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/go_uuid"
@@ -17,17 +17,17 @@ type Infinit struct {
 	CodeStorage *task_code_storage.TCStorage
 }
 
-func NewInfinit(cfg *config.Config) *Infinit {
+func NewInfinit(pathToDir string, storage *task_code_storage.TCStorage) *Infinit {
 	return &Infinit{
-		PathToDir:   cfg.PathToMethodsDirectory,
-		CodeStorage: cfg.TCStorage,
+		PathToDir:   pathToDir,
+		CodeStorage: storage,
 	}
 }
-func (i *Infinit) Launch(channels models.Channel) {
+func (i *Infinit) Launch(channels channels.Channel) {
 	go func() {
 		for {
 			select {
-			case ind := <-channels.ContentIndicator:
+			case ind := <-channels.ReadInfDataFromChannel():
 				i.userStructIsNotExist(ind)
 			}
 		}

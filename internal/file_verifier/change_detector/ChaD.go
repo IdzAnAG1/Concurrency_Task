@@ -1,8 +1,7 @@
 package change_detector
 
 import (
-	"concurrency_task/internal/config"
-	"concurrency_task/internal/models"
+	"concurrency_task/internal/channels"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/file_handler"
 	"concurrency_task/internal/utils/hash"
@@ -19,16 +18,16 @@ type ChaD struct {
 	TCStorage              *task_code_storage.TCStorage
 }
 
-func NewChad(cfg *config.Config) *ChaD {
+func NewChad(pathToDirectory string, interval time.Duration, quanFiles int, store *task_code_storage.TCStorage) *ChaD {
 	return &ChaD{
-		PathToMethodsDirectory: cfg.PathToMethodsDirectory,
-		Interval:               cfg.Interval,
-		QuanFilesInDirectory:   cfg.QuanFilesInDirectory,
-		TCStorage:              cfg.TCStorage,
+		PathToMethodsDirectory: pathToDirectory,
+		Interval:               interval,
+		QuanFilesInDirectory:   quanFiles,
+		TCStorage:              store,
 	}
 }
 
-func (ch *ChaD) Launch(channel models.Channel) {
+func (ch *ChaD) Launch(Channels channels.Channel) {
 	go func() {
 		ticker := time.NewTicker(ch.Interval)
 		defer ticker.Stop()
@@ -38,14 +37,14 @@ func (ch *ChaD) Launch(channel models.Channel) {
 			select {
 			case <-ticker.C:
 				if ch.isDirectoryWasUpdated(len(files)) {
-					channel.ContentChange <- true
+					Channels.SendToChangeChannel(true)
 				}
 				nameFile, err := ch.isFileWasUpdated(files)
 				if err != nil {
-					channel.Errors <- err
+					Channels.SendErrorsToChannel(err)
 				}
 				if nameFile != "" {
-					channel.Content <- nameFile
+					Channels.SendToContentChannel(nameFile)
 				}
 			}
 		}

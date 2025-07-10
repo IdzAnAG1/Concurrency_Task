@@ -1,11 +1,11 @@
 package file_verifier
 
 import (
+	"concurrency_task/internal/channels"
 	"concurrency_task/internal/config"
 	"concurrency_task/internal/file_verifier/change_detector"
 	"concurrency_task/internal/file_verifier/file_readiness_detector"
 	"concurrency_task/internal/file_verifier/injection_of_function_init"
-	"concurrency_task/internal/models"
 	"concurrency_task/internal/tasks/task_code_storage"
 	"concurrency_task/internal/utils/file_handler"
 	"fmt"
@@ -14,60 +14,58 @@ import (
 )
 
 type Mechanisms interface {
-	Launch(models.Channel)
+	Launch(channels.Channel)
 }
 type Verifier struct {
-	Cfg config.Config
+	PathToMethodsDirectory string
+	Interval               time.Duration
+	QuanFilesInDirectory   int
+	TCStorage              *task_code_storage.TCStorage
 }
 
-func NewVerifier(PathToMethodsDirectory string, Interval time.Duration) *Verifier {
+func NewVerifier(cfg config.Config) *Verifier {
 	return &Verifier{
-		config.Config{
-			PathToMethodsDirectory: PathToMethodsDirectory,
-			Interval:               Interval,
-			QuanFilesInDirectory:   0,
-			TCStorage:              nil,
-		},
+		PathToMethodsDirectory: cfg.FileVerifier.PathToMethodsDirectory,
+		Interval:               cfg.FileVerifier.Interval,
+		QuanFilesInDirectory:   0,
 	}
 }
 
 func (v *Verifier) Run() {
-	channel := models.NewChannel()
+	channel := channels.NewChannel()
 	Store := task_code_storage.NewTCStorage()
-	err := Store.Initialize(v.Cfg.PathToMethodsDirectory)
+	err := Store.Initialize(v.PathToMethodsDirectory)
 	if err != nil {
 
 	}
 
-	v.Cfg.TCStorage = Store
-	v.Cfg.QuanFilesInDirectory = len(file_handler.GetFilesInDirectory(v.Cfg.PathToMethodsDirectory))
+	v.TCStorage = Store
+	v.QuanFilesInDirectory = len(file_handler.GetFilesInDirectory(v.PathToMethodsDirectory))
 
-	Chad := change_detector.NewChad(&v.Cfg)
-	Fired := file_readiness_detector.NewFired(&v.Cfg)
-	Infinit := injection_of_function_init.NewInfinit(&v.Cfg)
+	Chad := change_detector.NewChad(v.PathToMethodsDirectory, v.Interval, v.QuanFilesInDirectory, v.TCStorage)
+	Fired := file_readiness_detector.NewFired(v.TCStorage)
+	Infinit := injection_of_function_init.NewInfinit(v.PathToMethodsDirectory, v.TCStorage)
 
 	mechanismsStart(channel, Chad, Fired, Infinit)
 	for {
 		select {
-		case val := <-channel.ContentChange:
+		case val := <-channel.ReadChangeFromChannel():
 			{
 				if val {
 					fmt.Println("channel is catch the signal")
 				}
 			}
-		case err := <-channel.Errors:
+		case err := <-channel.ReadErrorsFromChannel():
 			{
 				if err != nil {
 					log.Println(err)
 				}
 			}
-		default:
-
 		}
 	}
 }
 
-func mechanismsStart(channel *models.Channel, mechanisms ...Mechanisms) {
+func mechanismsStart(channel *channels.Channel, mechanisms ...Mechanisms) {
 	for _, el := range mechanisms {
 		el.Launch(*channel)
 	}
