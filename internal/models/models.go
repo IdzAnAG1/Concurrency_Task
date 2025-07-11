@@ -1,19 +1,25 @@
 package models
 
-type Channel struct {
-	Content chan string
-	Boolean chan bool
-}
-
-func NewChannel() *Channel {
-	return &Channel{
-		Content: make(chan string),
-		Boolean: make(chan bool),
-	}
-}
+import "sync"
 
 type ReadinessIndicator struct {
-	UserStructIsExist              bool
-	InterfaceImplementationIsExist bool
-	InitFuncIsExist                bool
+	mu           sync.Mutex
+	FileFullness map[string]int
+}
+
+func NewReadinessIndicator() *ReadinessIndicator {
+	return &ReadinessIndicator{
+		mu:           sync.Mutex{},
+		FileFullness: make(map[string]int),
+	}
+}
+func (r *ReadinessIndicator) Put(exp string, index int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.FileFullness[exp] = index
+}
+
+type InfinitData struct {
+	FileName  string
+	Indicator ReadinessIndicator
 }

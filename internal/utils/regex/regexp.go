@@ -1,13 +1,15 @@
 package regex
 
-import "regexp"
+import (
+	"regexp"
+)
 
-func Contains(regularExpression string, content []string) bool {
+func Contains(regularExpression string, content []string) (int, bool) {
 	r := regexp.MustCompile(regularExpression)
-	for _, el := range content {
+	for i, el := range content {
 		if r.MatchString(el) {
-			return true
+			return i, true
 		}
 	}
-	return false
+	return -1, false
 }

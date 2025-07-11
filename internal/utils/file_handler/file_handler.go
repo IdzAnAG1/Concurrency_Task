@@ -6,12 +6,12 @@ import (
 	"path"
 )
 
-func ReadFromFile(dir string, file os.DirEntry) string {
+func ReadFromFile(dir string, file os.DirEntry) (string, error) {
 	data, err := os.ReadFile(path.Join(dir, file.Name()))
 	if err != nil {
-		log.Fatal(err)
+		return "", err
 	}
-	return string(data)
+	return string(data), nil
 }
 
 func GetFilesInDirectory(path string) []os.DirEntry {
