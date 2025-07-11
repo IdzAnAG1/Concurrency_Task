@@ -1,25 +1,39 @@
 package logger
 
 import (
-	"concurrency_task/internal/channels"
-	"concurrency_task/internal/config"
-	"fmt"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-type Logger struct {
-}
-
-func NewLogger(cfg config.Config) (*Logger, error) {
-	return &Logger{}, nil
-}
-
-func (l *Logger) Launch(channel channels.Channel) {
-	go func() {
-		for {
-			select {
-			case err := <-channel.ReadErrorsFromChannel():
-				fmt.Println(err)
-			}
-		}
-	}()
+func NewLogger() (*zap.Logger, error) {
+	config := zap.Config{
+		Level:             zap.NewAtomicLevelAt(zap.DebugLevel),
+		Development:       true,
+		DisableCaller:     true,
+		DisableStacktrace: true,
+		Sampling:          nil,
+		Encoding:          "console",
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:          "MSG",
+			LevelKey:            "LVL",
+			TimeKey:             "TIM",
+			NameKey:             "NAM",
+			CallerKey:           "CAL",
+			FunctionKey:         "FUN",
+			StacktraceKey:       "STK",
+			SkipLineEnding:      false,
+			LineEnding:          zapcore.DefaultLineEnding,
+			EncodeLevel:         zapcore.CapitalColorLevelEncoder,
+			EncodeTime:          zapcore.RFC3339TimeEncoder,
+			EncodeDuration:      zapcore.StringDurationEncoder,
+			EncodeCaller:        zapcore.ShortCallerEncoder,
+			EncodeName:          zapcore.FullNameEncoder,
+			NewReflectedEncoder: nil,
+			ConsoleSeparator:    "",
+		},
+		OutputPaths:      []string{"stdout"},
+		ErrorOutputPaths: []string{"stderr"},
+		InitialFields:    nil,
+	}
+	return config.Build()
 }

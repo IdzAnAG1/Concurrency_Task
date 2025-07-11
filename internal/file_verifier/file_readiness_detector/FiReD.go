@@ -7,16 +7,21 @@ import (
 	"concurrency_task/internal/utils/regex"
 	"concurrency_task/internal/variables"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 )
 
 // Fired - Files Readiness Detector
 type Fired struct {
+	logger    zap.Logger
 	tcStorage *task_code_storage.TCStorage
 }
 
-func NewFired(store *task_code_storage.TCStorage) *Fired {
-	return &Fired{store}
+func NewFired(logger zap.Logger, store *task_code_storage.TCStorage) *Fired {
+	return &Fired{
+		logger,
+		store,
+	}
 }
 
 func (f *Fired) Launch(channels channels.Channel) {
@@ -25,7 +30,6 @@ func (f *Fired) Launch(channels channels.Channel) {
 			select {
 			case val := <-channels.ReadContentFromChannel():
 				{
-					fmt.Println("Cathch in fired")
 					test := f.fileIsReadyImp(val)
 					channels.SendToChannelContentIndicator(test)
 				}
@@ -43,7 +47,7 @@ func (f *Fired) fileIsReadyImp(content string) *models.InfinitData {
 	}
 	for key, val := range variables.RegExpressions {
 		index, flag := regex.Contains(val, lines)
-		fmt.Println("!~|~!", flag, index, "!~|~!")
+		f.logger.Info(fmt.Sprintf("The %s is present: %t", key, flag))
 		infData.Indicator.Put(key, index)
 	}
 

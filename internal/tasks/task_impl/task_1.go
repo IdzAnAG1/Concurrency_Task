@@ -8,6 +8,8 @@ import (
 // Come up with your own name for the structure and
 // replace the current UserStruct_c67eb694_6a0c_44e4_9e71_4b6db28718f4  structure name
 type Test struct {
+	name string
+	age  int
 }
 
 // This is an interface implementation function.

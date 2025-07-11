@@ -7,18 +7,21 @@ import (
 	"concurrency_task/internal/utils/go_uuid"
 	"concurrency_task/internal/variables"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 type Infinit struct {
+	logger      zap.Logger
 	PathToDir   string
 	CodeStorage *task_code_storage.TCStorage
 }
 
-func NewInfinit(pathToDir string, storage *task_code_storage.TCStorage) *Infinit {
+func NewInfinit(logger zap.Logger, pathToDir string, storage *task_code_storage.TCStorage) *Infinit {
 	return &Infinit{
+		logger:      logger,
 		PathToDir:   pathToDir,
 		CodeStorage: storage,
 	}
@@ -28,30 +31,36 @@ func (i *Infinit) Launch(channels channels.Channel) {
 		for {
 			select {
 			case ind := <-channels.ReadInfDataFromChannel():
-				i.userStructIsNotExist(ind)
+				if err := i.userStructIsNotExist(ind); err != nil {
+					channels.SendErrorsToChannel(err)
+				}
 			}
 		}
 	}()
 }
 
-func (i *Infinit) userStructIsNotExist(FiredMSG *models.InfinitData) {
+func (i *Infinit) userStructIsNotExist(FiredMSG *models.InfinitData) error {
 	str := i.CodeStorage.Get(FiredMSG.FileName)
 	temp := ""
 	linesArray := strings.Split(str, "\n")
 	if FiredMSG.Indicator.FileFullness[variables.USER_STRUCT] == -1 {
+		i.logger.Info("Custom structure added")
 		linesArray, temp = writeUserStructPattern(linesArray)
 	}
 	if FiredMSG.Indicator.FileFullness[variables.IMPLEMENTED_FUNC] == -1 {
+		i.logger.Info("The interface implementation feature has been added")
 		linesArray = writeFunctionForImplementation(temp, linesArray)
 	}
 	if FiredMSG.Indicator.FileFullness[variables.FUNC_INIT] == -1 {
+		i.logger.Info("The function of automatically adding to ready-to-run functions has been added")
 		linesArray = writeFuncInit(temp, linesArray)
 	}
 	str = strings.Join(linesArray, "\n")
 	err := os.WriteFile(filepath.Join(i.PathToDir, FiredMSG.FileName), []byte(str), 0644)
 	if err != nil {
-
+		return err
 	}
+	return nil
 }
 
 func writeUserStructPattern(StrArr []string) ([]string, string) {
