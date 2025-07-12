@@ -46,7 +46,11 @@ func (v *Verifier) Run() error {
 	}
 
 	v.TCStorage = Store
-	v.QuanFilesInDirectory = len(file_handler.GetFilesInDirectory(v.PathToMethodsDirectory))
+	files, err := file_handler.GetFilesInDirectory(v.PathToMethodsDirectory)
+	if err != nil {
+		channel.SendErrorsToChannel(err)
+	}
+	v.QuanFilesInDirectory = len(files)
 
 	Chad := change_detector.NewChad(
 		*logs,

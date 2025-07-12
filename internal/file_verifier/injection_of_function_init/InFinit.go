@@ -40,7 +40,10 @@ func (i *Infinit) Launch(channels channels.Channel) {
 }
 
 func (i *Infinit) userStructIsNotExist(FiredMSG *models.InfinitData) error {
-	str := i.CodeStorage.Get(FiredMSG.FileName)
+	str, err := i.CodeStorage.Get(FiredMSG.FileName)
+	if err != nil {
+		return err
+	}
 	temp := ""
 	linesArray := strings.Split(str, "\n")
 	if FiredMSG.Indicator.FileFullness[variables.USER_STRUCT] == -1 {
@@ -56,7 +59,7 @@ func (i *Infinit) userStructIsNotExist(FiredMSG *models.InfinitData) error {
 		linesArray = writeFuncInit(temp, linesArray)
 	}
 	str = strings.Join(linesArray, "\n")
-	err := os.WriteFile(filepath.Join(i.PathToDir, FiredMSG.FileName), []byte(str), 0644)
+	err = os.WriteFile(filepath.Join(i.PathToDir, FiredMSG.FileName), []byte(str), 0644)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,10 @@ func (f *Fired) Launch(channels channels.Channel) {
 			select {
 			case val := <-channels.ReadContentFromChannel():
 				{
-					test := f.fileIsReadyImp(val)
+					test, err := f.fileIsReadyImp(val)
+					if err != nil {
+						channels.SendErrorsToChannel(err)
+					}
 					channels.SendToChannelContentIndicator(test)
 				}
 			}
@@ -38,8 +41,11 @@ func (f *Fired) Launch(channels channels.Channel) {
 	}()
 }
 
-func (f *Fired) fileIsReadyImp(content string) *models.InfinitData {
-	code := f.tcStorage.Get(content)
+func (f *Fired) fileIsReadyImp(content string) (*models.InfinitData, error) {
+	code, err := f.tcStorage.Get(content)
+	if err != nil {
+		return nil, err
+	}
 	lines := strings.Split(code, "\n")
 	infData := &models.InfinitData{
 		FileName:  content,
@@ -50,6 +56,5 @@ func (f *Fired) fileIsReadyImp(content string) *models.InfinitData {
 		f.logger.Info(fmt.Sprintf("The %s is present: %t", key, flag))
 		infData.Indicator.Put(key, index)
 	}
-
-	return infData
+	return infData, nil
 }

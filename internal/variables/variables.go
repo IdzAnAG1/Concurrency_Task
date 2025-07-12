@@ -31,7 +31,7 @@ const (
 var (
 	RegExpressions = map[string]string{
 		USER_STRUCT:      `type\s+[a-zA-Z_0-9]+\s+struct\s+\{`,
-		FUNC_INIT:        `func init\(\) \{`,
+		FUNC_INIT:        `func\s*init\(\s*\)\s*\{`,
 		IMPLEMENTED_FUNC: `func\s+\([a-zA-Z_0-9]+\s+\*?[a-zA-Z_0-9]+\s*\)\s*Launch\s*\(\s*\)\s*{`,
 	}
 )

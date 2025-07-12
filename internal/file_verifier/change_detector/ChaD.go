@@ -37,7 +37,8 @@ func (ch *ChaD) Launch(Channels channels.Channel) {
 		defer ticker.Stop()
 
 		for {
-			files := file_handler.GetFilesInDirectory(ch.PathToMethodsDirectory)
+			files, err := file_handler.GetFilesInDirectory(ch.PathToMethodsDirectory)
+			Channels.SendErrorsToChannel(err)
 			select {
 			case <-ticker.C:
 				if ch.isDirectoryWasUpdated(len(files)) {
@@ -70,15 +71,21 @@ func (ch *ChaD) isFileWasUpdated(filesInDir []os.DirEntry) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if ch.isCurrentContentNotActual(currentCode, file.Name()) {
+		if isActual, err1 := ch.isCurrentContentNotActual(currentCode, file.Name()); err1 != nil {
+			return "", err1
+		} else if isActual == true {
 			return file.Name(), nil
 		}
 	}
 	return "", nil
 }
 
-func (ch *ChaD) isCurrentContentNotActual(currentContent, filename string) bool {
-	savedEntry := hash.ConvertToHash(ch.TCStorage.Get(filename))
+func (ch *ChaD) isCurrentContentNotActual(currentContent, filename string) (bool, error) {
+	savedContent, err1 := ch.TCStorage.Get(filename)
+	if err1 != nil {
+		return false, err1
+	}
+	savedEntry := hash.ConvertToHash(savedContent)
 	if hash.ConvertToHash(currentContent) != savedEntry {
 		ch.logger.Info(fmt.Sprintf("In the file %s updates have occurred", filename))
 		ch.logger.Info(
@@ -86,8 +93,10 @@ func (ch *ChaD) isCurrentContentNotActual(currentContent, filename string) bool 
 				"The data in the repository does not match the contents of the %s, updating the contents of the repository",
 				filename),
 		)
-		ch.TCStorage.Put(filename, currentContent)
-		return true
+		if err := ch.TCStorage.Put(filename, currentContent); err != nil {
+			return false, err
+		}
+		return true, nil
 	}
-	return false
+	return false, nil
 }

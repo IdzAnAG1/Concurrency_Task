@@ -1,7 +1,6 @@
 package file_handler
 
 import (
-	"log"
 	"os"
 	"path"
 )
@@ -14,10 +13,10 @@ func ReadFromFile(dir string, file os.DirEntry) (string, error) {
 	return string(data), nil
 }
 
-func GetFilesInDirectory(path string) []os.DirEntry {
+func GetFilesInDirectory(path string) ([]os.DirEntry, error) {
 	FilesIntoDirectory, err := os.ReadDir(path + "/")
 	if err != nil {
-		log.Fatal(err)
+		return []os.DirEntry{}, err
 	}
-	return FilesIntoDirectory
+	return FilesIntoDirectory, nil
 }
