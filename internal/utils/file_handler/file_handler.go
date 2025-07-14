@@ -14,7 +14,7 @@ func ReadFromFile(dir string, file os.DirEntry) (string, error) {
 }
 
 func GetFilesInDirectory(path string) ([]os.DirEntry, error) {
-	FilesIntoDirectory, err := os.ReadDir(path + "/")
+	FilesIntoDirectory, err := os.ReadDir(path)
 	if err != nil {
 		return []os.DirEntry{}, err
 	}
