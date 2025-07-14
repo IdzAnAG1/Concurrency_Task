@@ -7,14 +7,17 @@ import (
 	"concurrency_task/internal/file_verifier/errors_handler"
 	"concurrency_task/internal/file_verifier/file_readiness_detector"
 	"concurrency_task/internal/file_verifier/injection_of_function_init"
+	"concurrency_task/internal/interruptor"
 	"concurrency_task/internal/logger"
 	"concurrency_task/internal/tasks/task_code_storage"
+	_ "concurrency_task/internal/tasks/task_impl"
 	"concurrency_task/internal/utils/file_handler"
+	"golang.org/x/net/context"
 	"time"
 )
 
 type Mechanisms interface {
-	Launch(channels.Channel)
+	Launch(context.Context, channels.Channel)
 }
 type Verifier struct {
 	PathToMethodsDirectory string
@@ -38,7 +41,13 @@ func (v *Verifier) Run() error {
 	}
 	defer logs.Sync()
 
-	channel := channels.NewChannel(*logs)
+	channel := *channels.NewChannel(*logs)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	interuptor := interruptor.NewInterruptor(channel, cancel)
+	interuptor.Run()
+
 	Store := task_code_storage.NewTCStorage(*logs)
 	err = Store.Initialize(v.PathToMethodsDirectory)
 	if err != nil {
@@ -63,21 +72,20 @@ func (v *Verifier) Run() error {
 	Infinit := injection_of_function_init.NewInfinit(*logs, v.PathToMethodsDirectory, v.TCStorage)
 	errHan := errors_handler.NewErrorsHandler(*logs)
 
-	mechanismsStart(channel, errHan, Chad, Fired, Infinit)
+	mechanismsStart(ctx, channel, errHan, Chad, Fired, Infinit)
+loop:
 	for {
 		select {
-		case val := <-channel.ReadChangeFromChannel():
-			{
-				if val {
-
-				}
-			}
+		case <-ctx.Done():
+			logs.Info("The completion signal has been received")
+			break loop
 		}
 	}
+	return nil
 }
 
-func mechanismsStart(channel *channels.Channel, mechanisms ...Mechanisms) {
+func mechanismsStart(ctx context.Context, channel channels.Channel, mechanisms ...Mechanisms) {
 	for _, el := range mechanisms {
-		el.Launch(*channel)
+		el.Launch(ctx, channel)
 	}
 }

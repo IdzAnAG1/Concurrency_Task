@@ -7,6 +7,7 @@ import (
 	"concurrency_task/internal/utils/hash"
 	"fmt"
 	"go.uber.org/zap"
+	"golang.org/x/net/context"
 
 	"os"
 	"time"
@@ -31,26 +32,32 @@ func NewChad(logger zap.Logger, pathToDirectory string, interval time.Duration, 
 	}
 }
 
-func (ch *ChaD) Launch(Channels channels.Channel) {
+func (ch *ChaD) Launch(ctx context.Context, Channels channels.Channel) {
 	go func() {
+		ch.logger.Info("Change Detector was launched")
 		ticker := time.NewTicker(ch.Interval)
 		defer ticker.Stop()
 
 		for {
 			files, err := file_handler.GetFilesInDirectory(ch.PathToMethodsDirectory)
-			Channels.SendErrorsToChannel(err)
+			if err != nil {
+				Channels.SendErrorsToChannel(err)
+			}
 			select {
 			case <-ticker.C:
 				if ch.isDirectoryWasUpdated(len(files)) {
 					Channels.SendToChangeChannel(true)
 				}
-				nameFile, err := ch.isFileWasUpdated(files)
-				if err != nil {
-					Channels.SendErrorsToChannel(err)
+				nameFile, err1 := ch.isFileWasUpdated(files)
+				if err1 != nil {
+					Channels.SendErrorsToChannel(err1)
 				}
 				if nameFile != "" {
 					Channels.SendToContentChannel(nameFile)
 				}
+			case <-ctx.Done():
+				ch.logger.Info("The completion signal is received in Change Detector")
+				return
 			}
 		}
 	}()

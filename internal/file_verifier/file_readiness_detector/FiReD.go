@@ -8,6 +8,7 @@ import (
 	"concurrency_task/internal/variables"
 	"fmt"
 	"go.uber.org/zap"
+	"golang.org/x/net/context"
 	"strings"
 )
 
@@ -24,8 +25,9 @@ func NewFired(logger zap.Logger, store *task_code_storage.TCStorage) *Fired {
 	}
 }
 
-func (f *Fired) Launch(channels channels.Channel) {
+func (f *Fired) Launch(ctx context.Context, channels channels.Channel) {
 	go func() {
+		f.logger.Info("Files Readiness Detector was launched")
 		for {
 			select {
 			case val := <-channels.ReadContentFromChannel():
@@ -36,6 +38,9 @@ func (f *Fired) Launch(channels channels.Channel) {
 					}
 					channels.SendToChannelContentIndicator(test)
 				}
+			case <-ctx.Done():
+				f.logger.Info("The completion signal is received in Change Detector")
+				return
 			}
 		}
 	}()

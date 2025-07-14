@@ -8,6 +8,7 @@ import (
 	"concurrency_task/internal/variables"
 	"fmt"
 	"go.uber.org/zap"
+	"golang.org/x/net/context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,14 +27,19 @@ func NewInfinit(logger zap.Logger, pathToDir string, storage *task_code_storage.
 		CodeStorage: storage,
 	}
 }
-func (i *Infinit) Launch(channels channels.Channel) {
+func (i *Infinit) Launch(ctx context.Context, channels channels.Channel) {
 	go func() {
+		i.logger.Info("Injection function init was launched")
+
 		for {
 			select {
 			case ind := <-channels.ReadInfDataFromChannel():
 				if err := i.userStructIsNotExist(ind); err != nil {
 					channels.SendErrorsToChannel(err)
 				}
+			case <-ctx.Done():
+				i.logger.Info("The completion signal is received in Injection function init")
+				return
 			}
 		}
 	}()

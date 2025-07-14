@@ -3,7 +3,6 @@ package task_storage
 import (
 	"concurrency_task/internal/tasks"
 	"concurrency_task/internal/utils/go_uuid"
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -26,7 +25,7 @@ func NewTaskStorage() *TaskStorage {
 
 func GetStorageInstance() *TaskStorage {
 	if StorageInstance == nil {
-		_ = fmt.Errorf("The task storage has not been initialized ")
+		StorageInstance = NewTaskStorage()
 	}
 	return StorageInstance
 }
@@ -54,4 +53,10 @@ func (ts *TaskStorage) taskIsLocatedInTheRepository(taskName string) bool {
 	_, ex := ts.Storage[taskName]
 	ts.mu.Unlock()
 	return ex
+}
+
+func (ts *TaskStorage) LaunchTaskByName(taskName string) {
+	ts.mu.Lock()
+	ts.Storage[taskName].Launch()
+	ts.mu.Unlock()
 }
