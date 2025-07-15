@@ -3,6 +3,7 @@ package channels
 import (
 	"concurrency_task/internal/models"
 	"go.uber.org/zap"
+	"os"
 )
 
 type Channel struct {
@@ -11,18 +12,32 @@ type Channel struct {
 	contentChange    chan bool
 	contentIndicator chan *models.InfinitData
 	errors           chan error
+	interruption     chan os.Signal
 }
 
 func NewChannel(logger zap.Logger) *Channel {
+	logger.Info("Channels is opened")
 	return &Channel{
 		logger:           logger,
 		content:          make(chan string),
 		contentChange:    make(chan bool),
 		contentIndicator: make(chan *models.InfinitData),
 		errors:           make(chan error),
+		interruption:     make(chan os.Signal, 1),
 	}
 }
-
+func (c *Channel) CloseChannels() {
+	go func() {
+		close(c.content)
+		close(c.contentChange)
+		close(c.contentIndicator)
+		close(c.errors)
+	}()
+	c.logger.Info("Channels Closed")
+}
+func (c *Channel) GetInterruptionChannel() chan os.Signal {
+	return c.interruption
+}
 func (c *Channel) SendToContentChannel(element string) {
 	c.logger.Info("Data has been sent to the content channel")
 	c.content <- element
