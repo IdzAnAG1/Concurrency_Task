@@ -16,6 +16,7 @@ type Channel struct {
 }
 
 func NewChannel(logger zap.Logger) *Channel {
+	logger.Info("Channels is opened")
 	return &Channel{
 		logger:           logger,
 		content:          make(chan string),
@@ -25,13 +26,14 @@ func NewChannel(logger zap.Logger) *Channel {
 		interruption:     make(chan os.Signal, 1),
 	}
 }
-func (c *Channel) SendToInterruptionChannel(element os.Signal) {
-	c.logger.Info("Receiving a shutdown signal")
-	c.interruption <- element
-}
-func (c *Channel) ReadSignalFromChannel() <-chan os.Signal {
-	c.logger.Info("Sending a completion signal for processing")
-	return c.interruption
+func (c *Channel) CloseChannels() {
+	go func() {
+		close(c.content)
+		close(c.contentChange)
+		close(c.contentIndicator)
+		close(c.errors)
+	}()
+	c.logger.Info("Channels Closed")
 }
 func (c *Channel) GetInterruptionChannel() chan os.Signal {
 	return c.interruption

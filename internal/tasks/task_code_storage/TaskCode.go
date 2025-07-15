@@ -35,9 +35,6 @@ func (ts *TCStorage) Put(filename string, code string) error {
 func (ts *TCStorage) Get(filename string) (string, error) {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
-	if _, exists := ts.Storage[filename]; !exists {
-		return "", errors.New("the contents of the file are not contained in the repository")
-	}
 	return ts.Storage[filename], nil
 }
 func (ts *TCStorage) Delete(filename string) {

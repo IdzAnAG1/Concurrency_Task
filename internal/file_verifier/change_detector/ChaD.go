@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
+	"sync"
 
 	"os"
 	"time"
@@ -16,15 +17,17 @@ import (
 // ChaD - Change Detector
 type ChaD struct {
 	logger                 zap.Logger
+	channels               channels.Channel
 	PathToMethodsDirectory string
 	Interval               time.Duration
 	QuanFilesInDirectory   int
 	TCStorage              *task_code_storage.TCStorage
 }
 
-func NewChad(logger zap.Logger, pathToDirectory string, interval time.Duration, quanFiles int, store *task_code_storage.TCStorage) *ChaD {
+func NewChad(logger zap.Logger, channels channels.Channel, pathToDirectory string, interval time.Duration, quanFiles int, store *task_code_storage.TCStorage) *ChaD {
 	return &ChaD{
 		logger:                 logger,
+		channels:               channels,
 		PathToMethodsDirectory: pathToDirectory,
 		Interval:               interval,
 		QuanFilesInDirectory:   quanFiles,
@@ -32,8 +35,10 @@ func NewChad(logger zap.Logger, pathToDirectory string, interval time.Duration, 
 	}
 }
 
-func (ch *ChaD) Launch(ctx context.Context, Channels channels.Channel) {
+func (ch *ChaD) Launch(ctx context.Context, group *sync.WaitGroup) {
+	group.Add(1)
 	go func() {
+		defer group.Done()
 		ch.logger.Info("Change Detector was launched")
 		ticker := time.NewTicker(ch.Interval)
 		defer ticker.Stop()
@@ -41,19 +46,19 @@ func (ch *ChaD) Launch(ctx context.Context, Channels channels.Channel) {
 		for {
 			files, err := file_handler.GetFilesInDirectory(ch.PathToMethodsDirectory)
 			if err != nil {
-				Channels.SendErrorsToChannel(err)
+				ch.channels.SendErrorsToChannel(err)
 			}
 			select {
 			case <-ticker.C:
 				if ch.isDirectoryWasUpdated(len(files)) {
-					Channels.SendToChangeChannel(true)
+					ch.logger.Info("Directory was updated")
 				}
 				nameFile, err1 := ch.isFileWasUpdated(files)
 				if err1 != nil {
-					Channels.SendErrorsToChannel(err1)
+					ch.channels.SendErrorsToChannel(err1)
 				}
 				if nameFile != "" {
-					Channels.SendToContentChannel(nameFile)
+					ch.channels.SendToContentChannel(nameFile)
 				}
 			case <-ctx.Done():
 				ch.logger.Info("The completion signal is received in Change Detector")

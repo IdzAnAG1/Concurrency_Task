@@ -10,36 +10,41 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 	"strings"
+	"sync"
 )
 
 // Fired - Files Readiness Detector
 type Fired struct {
 	logger    zap.Logger
+	channels  channels.Channel
 	tcStorage *task_code_storage.TCStorage
 }
 
-func NewFired(logger zap.Logger, store *task_code_storage.TCStorage) *Fired {
+func NewFired(logger zap.Logger, channels channels.Channel, store *task_code_storage.TCStorage) *Fired {
 	return &Fired{
 		logger,
+		channels,
 		store,
 	}
 }
 
-func (f *Fired) Launch(ctx context.Context, channels channels.Channel) {
+func (f *Fired) Launch(ctx context.Context, group *sync.WaitGroup) {
+	group.Add(1)
 	go func() {
+		defer group.Done()
 		f.logger.Info("Files Readiness Detector was launched")
 		for {
 			select {
-			case val := <-channels.ReadContentFromChannel():
+			case val := <-f.channels.ReadContentFromChannel():
 				{
 					test, err := f.fileIsReadyImp(val)
 					if err != nil {
-						channels.SendErrorsToChannel(err)
+						f.channels.SendErrorsToChannel(err)
 					}
-					channels.SendToChannelContentIndicator(test)
+					f.channels.SendToChannelContentIndicator(test)
 				}
 			case <-ctx.Done():
-				f.logger.Info("The completion signal is received in Change Detector")
+				f.logger.Info("The completion signal is received in Files Readiness Detector")
 				return
 			}
 		}

@@ -12,30 +12,34 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
 type Infinit struct {
 	logger      zap.Logger
+	channels    channels.Channel
 	PathToDir   string
 	CodeStorage *task_code_storage.TCStorage
 }
 
-func NewInfinit(logger zap.Logger, pathToDir string, storage *task_code_storage.TCStorage) *Infinit {
+func NewInfinit(logger zap.Logger, channels channels.Channel, pathToDir string, storage *task_code_storage.TCStorage) *Infinit {
 	return &Infinit{
 		logger:      logger,
+		channels:    channels,
 		PathToDir:   pathToDir,
 		CodeStorage: storage,
 	}
 }
-func (i *Infinit) Launch(ctx context.Context, channels channels.Channel) {
+func (i *Infinit) Launch(ctx context.Context, group *sync.WaitGroup) {
+	group.Add(1)
 	go func() {
+		defer group.Done()
 		i.logger.Info("Injection function init was launched")
-
 		for {
 			select {
-			case ind := <-channels.ReadInfDataFromChannel():
+			case ind := <-i.channels.ReadInfDataFromChannel():
 				if err := i.userStructIsNotExist(ind); err != nil {
-					channels.SendErrorsToChannel(err)
+					i.channels.SendErrorsToChannel(err)
 				}
 			case <-ctx.Done():
 				i.logger.Info("The completion signal is received in Injection function init")
